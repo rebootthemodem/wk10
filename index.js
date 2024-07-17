@@ -17,53 +17,39 @@ app.set('views', path.join(__dirname, 'views'));
 const config = {
     user: 'azureuser',
     password: 'P@ssw0rdssss',
-    server: 'wk10wk10.database.windows.net',
-    database: 'wk10wk10',
+    server: 'wkwk1010.database.windows.net',
+    database: 'wkwk1010',
     options: {
         encrypt: true,
         enableArithAbort: true
     }
 };
 
-let dbConnected = false;
-
 // Connect to Azure SQL Database
 async function connectToDatabase() {
     try {
         await sql.connect(config);
         console.log('Connected to Azure SQL Database');
-        dbConnected = true;
+        // Add a 10-second delay before opening the / route
+        setTimeout(() => {
+            app.get('/', async (req, res) => {
+                try {
+                    const result = await sql.query`SELECT * FROM Expenses`;
+                    res.render('index', { expenses: result.recordset });
+                } catch (err) {
+                    console.error('Error retrieving expenses:', err);
+                    res.status(500).send('Error retrieving expenses');
+                }
+            });
+        }, 10000);
     } catch (err) {
         console.error('Error connecting to Azure SQL Database:', err);
-        setTimeout(connectToDatabase, 5000); // Retry connection after 5 seconds
     }
 }
 
 connectToDatabase();
 
-// Middleware to check database connection
-function ensureDatabaseConnection(req, res, next) {
-    if (dbConnected) {
-        next();
-    } else {
-        res.status(503).send('Service Unavailable: Database connection not established');
-    }
-}
-
-// Use the middleware for all routes
-app.use(ensureDatabaseConnection);
-
 // Routes
-app.get('/', async (req, res) => {
-    try {
-        const result = await sql.query`SELECT * FROM Expenses`;
-        res.render('index', { expenses: result.recordset });
-    } catch (err) {
-        console.error('Error retrieving expenses:', err);
-        res.status(500).send('Error retrieving expenses');
-    }
-});
-
 app.post('/add-expense', async (req, res) => {
     const { category, amount, date, description } = req.body;
     try {
@@ -103,17 +89,4 @@ app.get('/add-random-expense', async (req, res) => {
         request.input('category', sql.VarChar, randomCategory);
         request.input('amount', sql.Decimal(10, 2), randomAmount);
         request.input('date', sql.Date, formattedDate);
-        request.input('description', sql.VarChar, description);
-
-        await request.query(query);
-        res.redirect('/');
-    } catch (err) {
-        console.error('Error adding random expense:', err);
-        res.status(500).send('Error adding random expense: ' + err.message);
-    }
-});
-
-// Start server
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+        request.input('description'
