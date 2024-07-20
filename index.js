@@ -24,7 +24,7 @@ const config = {
         enableArithAbort: true
     }
 };
-
+//
 // Connect to Azure SQL Database
 async function connectToDatabase() {
     try {
