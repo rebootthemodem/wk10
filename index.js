@@ -6,8 +6,6 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-let isDatabaseConnected = false;
-
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -31,21 +29,13 @@ const config = {
 async function connectToDatabase() {
   try {
     await sql.connect(config);
-    isDatabaseConnected = true;
     console.log('Connected to Azure SQL Database');
   } catch (err) {
     console.error('Error connecting to Azure SQL Database:', err);
   }
 }
 
-// Check database connection before handling requests
-app.use((req, res, next) => {
-  if (isDatabaseConnected) {
-    next();
-  } else {
-    res.status(500).send('Database is not connected');
-  }
-});
+connectToDatabase();
 
 // Routes
 app.get('/', async (req, res) => {
@@ -54,7 +44,7 @@ app.get('/', async (req, res) => {
     res.render('index', { expenses: result.recordset });
   } catch (err) {
     console.error('Error retrieving expenses:', err);
-    res.status(500).send(`Error retrieving expenses: ${err.message}`);
+    res.status(500).send('Error retrieving expenses');
   }
 });
 
@@ -108,11 +98,6 @@ app.get('/add-random-expense', async (req, res) => {
 });
 
 // Start server
-async function startServer() {
-  await connectToDatabase();
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-  });
-}
-
-startServer();
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
